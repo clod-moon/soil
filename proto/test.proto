@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message SourceConfig {
+    int64 source_id  = 1; //数据集id
+    int64 model_type = 2; //模型文件类型 1车辆 2人体 3人脸
+    string attrs_config = 3; //属性配置
+}
+
+message Request {
+  repeated  SourceConfig sources_config = 4;
+}
+
+
+message Response {
+  int64 err_code =6; // 错误码
+  string err_msg = 7; //错误信息
+}
+
+service Predict1Service {
+  rpc predict1 (Request) returns (Response);
+}
+
+service Predict2Service {
+  rpc predict2 (Request) returns (Response);
+}
+
+service Predict3Service {
+  rpc predict3 (Request) returns (Response);
+}
