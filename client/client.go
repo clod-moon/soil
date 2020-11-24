@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
+	"soil/consul"
 	test "soil/proto"
 	"time"
 )
@@ -33,6 +34,26 @@ const (
 )
 
 type CallBackFuncs map[string]callback
+type ModelMange []string
+
+func (m *ModelMange)AddRegister(name string) {
+	*m = append(*m,name)
+}
+
+func (m ModelMange)Register() {
+	for _,v := range m {
+		server_info := consul.Discover(v)
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d",server_info[0].Addr,server_info[0].Port), grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		c1 := test.NewPredictServiceClient(conn)
+
+		callBackFuncs.Register(v,c1.Predict)
+	}
+}
+
+
 
 func (c *CallBackFuncs) Register(funcname string,callback callback){
 	(*c)[funcname] = callback
@@ -48,6 +69,7 @@ func (c CallBackFuncs)GetCallback(funcname string) (callback,error) {
 
 var (
 	callBackFuncs =make(CallBackFuncs)
+	modelMange ModelMange
 )
 
 type callback func(ctx context.Context, in *test.Request, opts ...grpc.CallOption) (*test.Response, error)
@@ -55,17 +77,12 @@ type callback func(ctx context.Context, in *test.Request, opts ...grpc.CallOptio
 
 func init() {
 
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	c1 := test.NewPredict1ServiceClient(conn)
-	c2 := test.NewPredict2ServiceClient(conn)
-	c3 := test.NewPredict3ServiceClient(conn)
+	consul.InitConsul()
 
-	callBackFuncs.Register("predict1",c1.Predict1)
-	callBackFuncs.Register("predict2",c2.Predict2)
-	callBackFuncs.Register("predict3",c3.Predict3)
+	modelMange.AddRegister("predict1")
+	modelMange.AddRegister("predict2")
+
+	modelMange.Register()
 }
 
 
@@ -88,7 +105,7 @@ func main() {
 		req.SourcesConfig = append(req.SourcesConfig,sc)
 	}
 
-	for i:=0;i<3;i++ {
+	for i:=0;i<2;i++ {
 		f, err := callBackFuncs.GetCallback(fmt.Sprintf("predict%d",i+1))
 		if err != nil {
 			log.Fatalf("could not found func: %v", err)

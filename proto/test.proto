@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+#protoc --go_out=. --plugin=protoc-gen-go=D:/go_workspace/src/soil/proto/ test.proto
+
 message SourceConfig {
     int64 source_id  = 1; //数据集id
     int64 model_type = 2; //模型文件类型 1车辆 2人体 3人脸
@@ -16,14 +18,6 @@ message Response {
   string err_msg = 7; //错误信息
 }
 
-service Predict1Service {
-  rpc predict1 (Request) returns (Response);
-}
-
-service Predict2Service {
-  rpc predict2 (Request) returns (Response);
-}
-
-service Predict3Service {
-  rpc predict3 (Request) returns (Response);
+service PredictService {
+  rpc predict (Request) returns (Response);
 }
